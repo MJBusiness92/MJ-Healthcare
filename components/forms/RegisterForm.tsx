@@ -37,6 +37,7 @@ const RegisterForm = ({ user }: { user: User }) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      gender: "male", // Defina conforme a string literal esperada
     },
   });
 
@@ -59,13 +60,13 @@ const RegisterForm = ({ user }: { user: User }) => {
     }
 
     try {
-      const patient = {
+      const patient: RegisterUserParams = {
         userId: user.$id,
         name: values.name,
         email: values.email,
         phone: values.phone,
         birthDate: new Date(values.birthDate),
-        gender: values.gender,
+        gender: values.gender as Gender, // "male" | "female" | "other" -> Usar em último caso.
         address: values.address,
         occupation: values.occupation,
         emergencyContactName: values.emergencyContactName,
@@ -293,7 +294,7 @@ const RegisterForm = ({ user }: { user: User }) => {
               control={form.control}
               name="familyMedicalHistory"
               label=" Family medical history (if relevant)"
-              placeholder="Mother had brain cancer, Father has hypertension"
+              placeholder="Mother with asma, Father has hypertension"
             />
 
             <CustomFormField

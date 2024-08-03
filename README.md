@@ -590,7 +590,7 @@ declare type SearchParamProps = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
-declare type Gender = "Male" | "Female" | "Other";
+declare type Gender = "male" | "female" | "other";
 declare type Status = "pending" | "scheduled" | "cancelled";
 
 declare interface CreateUserParams {
@@ -681,7 +681,7 @@ export interface Appointment extends Models.Document {
   reason: string;
   note: string;
   userId: string;
-  cancellationReason: string | null;
+  cancellationReason: string; | null;
 }
 ```
 

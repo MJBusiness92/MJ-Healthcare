@@ -13,17 +13,39 @@ import {
 } from "../appwrite.config";
 import { formatDateTime, parseStringify } from "../utils";
 
+// Supondo que o tipo 'CreateAppointmentParams' seja algo assim:
+export type CreateAppointmentParams = {
+  schedule: Date;
+  primaryPhysician: string;
+  reason: string;
+  note?: string;
+  cancellationReason?: string;
+  // patientPhoneNumber: string;  Adicione o campo 'patientPhoneNumber'
+  title?: string; // Adicione o campo 'title' se ele for necessário
+};
+
 //  CREATE APPOINTMENT
 export const createAppointment = async (
   appointment: CreateAppointmentParams
 ) => {
   try {
+    // Remova o campo 'title' se não estiver definido no esquema da coleção
+    const { title, ...validAppointmentData } = appointment;
+
     const newAppointment = await databases.createDocument(
       DATABASE_ID!,
       APPOINTMENT_COLLECTION_ID!,
       ID.unique(),
-      appointment
+      validAppointmentData
+      // appointment
     );
+
+    // Supondo que você tenha o número de telefone do paciente no documento
+    // const patientPhoneNumber = newAppointment.patientPhoneNumber; // Ajuste conforme necessário
+
+    // Enviar SMS de notificação via Appwrite
+    /* const smsBody = `Olá, seu compromisso está agendado para ${formatDateTime(appointment.schedule).dateTime} com Dr. ${appointment.primaryPhysician}.`;
+     await sendSMSNotification(patientPhoneNumber, smsBody); */
 
     revalidatePath("/admin");
     return parseStringify(newAppointment);
@@ -69,13 +91,16 @@ export const getRecentAppointmentList = async () => {
 
     const counts = (appointments.documents as Appointment[]).reduce(
       (acc, appointment) => {
-        switch (appointment.status) {
-          case "scheduled":
-            acc.scheduledCount++;
-            break;
-          case "pending":
-            acc.pendingCount++;
-            break;
+        // OS VALORES ABAIXO FORAM USADOS NO VÍDEO, SUBTUIR EM ÚLTIMO CASO:
+        switch (
+          appointment.status // if (appointment.status === 'scheduled') {
+        ) {
+          case "scheduled": // acc.scheduledCount += 1;
+            acc.scheduledCount++; // } else if (appointment.status === 'pending') {
+            break; // acc.pendingCount += 1;
+          case "pending": // } else if (appointment.status === 'cancelled') {
+            acc.pendingCount++; // acc.cancelledcount += 1;
+            break; // }
           case "cancelled":
             acc.cancelledCount++;
             break;
@@ -125,14 +150,15 @@ export const updateAppointment = async ({
 }: UpdateAppointmentParams) => {
   try {
     // Update appointment to scheduled -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#updateDocument
+    const { title, ...validAppointmentData } = appointment; // Exclui 'title' se não for válido
     const updatedAppointment = await databases.updateDocument(
       DATABASE_ID!,
       APPOINTMENT_COLLECTION_ID!,
       appointmentId,
-      appointment
+      validAppointmentData
     );
 
-    if (!updatedAppointment) throw Error;
+    if (!updatedAppointment) throw new Error("Appointment not found");
 
     const smsMessage = `Greetings from CarePulse. ${type === "schedule" ? `Your appointment is confirmed for ${formatDateTime(appointment.schedule!).dateTime} with Dr. ${appointment.primaryPhysician}` : `We regret to inform that your appointment for ${formatDateTime(appointment.schedule!).dateTime} is cancelled. Reason:  ${appointment.cancellationReason}`}.`;
     await sendSMSNotification(userId, smsMessage);

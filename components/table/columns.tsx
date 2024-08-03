@@ -12,7 +12,7 @@ import { StatusBadge } from "../StatusBadge";
 
 export const columns: ColumnDef<Appointment>[] = [
   {
-    header: "#",
+    header: "ID", // Ante tinha uma '#' no lugar do ID
     cell: ({ row }) => {
       return <p className="text-14-medium ">{row.index + 1}</p>;
     },
@@ -21,19 +21,19 @@ export const columns: ColumnDef<Appointment>[] = [
     accessorKey: "patient",
     header: "Patient",
     cell: ({ row }) => {
-      const appointment = row.original;
-      return <p className="text-14-medium ">{appointment.patient.name}</p>;
+      // const appointment = row.original;
+      return <p className="text-14-medium ">{row.original.patient.name}</p>; // Antes era {appointment.patient.name}
     },
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const appointment = row.original;
+      // const appointment = row.original;
       return (
         <div className="min-w-[115px]">
-          <StatusBadge status={appointment.status} />
-        </div>
+          <StatusBadge status={row.original.status} />
+        </div> // Antes era {appointment.status}
       );
     },
   },
@@ -41,17 +41,17 @@ export const columns: ColumnDef<Appointment>[] = [
     accessorKey: "schedule",
     header: "Appointment",
     cell: ({ row }) => {
-      const appointment = row.original;
+      // const appointment = row.original;
       return (
         <p className="text-14-regular min-w-[100px]">
-          {formatDateTime(appointment.schedule).dateTime}
-        </p>
+          {formatDateTime(row.original.schedule).dateTime}
+        </p> // Antes era "{formatDateTime(appointment.schedule).dateTime}"
       );
     },
   },
   {
     accessorKey: "primaryPhysician",
-    header: "Doctor",
+    header: () => "Doctor", // Antes era apenas "Doctor"
     cell: ({ row }) => {
       const appointment = row.original;
 
@@ -76,23 +76,24 @@ export const columns: ColumnDef<Appointment>[] = [
   {
     id: "actions",
     header: () => <div className="pl-4">Actions</div>,
-    cell: ({ row }) => {
-      const appointment = row.original;
+    cell: ({ row: { original: data } }) => {
+      // No vídeo original a sintaxe do código está diferente
+      // const appointment = row.original;
 
       return (
         <div className="flex gap-1">
           <AppointmentModal
-            patientId={appointment.patient.$id}
-            userId={appointment.userId}
-            appointment={appointment}
+            patientId={data.patient.$id}
+            userId={data.userId}
+            appointment={data}
             type="schedule"
             title="Schedule Appointment"
             description="Please confirm the following details to schedule."
           />
           <AppointmentModal
-            patientId={appointment.patient.$id}
-            userId={appointment.userId}
-            appointment={appointment}
+            patientId={data.patient.$id}
+            userId={data.userId}
+            appointment={data}
             type="cancel"
             title="Cancel Appointment"
             description="Are you sure you want to cancel your appointment?"

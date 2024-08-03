@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Dispatch, SetStateAction, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -33,29 +33,33 @@ export const AppointmentForm = ({
   patientId: string;
   type: "create" | "schedule" | "cancel";
   appointment?: Appointment;
-  setOpen?: Dispatch<SetStateAction<boolean>>;
+  setOpen?: (open: boolean) => void; // Dispatch<SetStateAction<boolean>>; // esssa linha de código no vídeo está diferente
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const AppointmentFormValidation = getAppointmentSchema(type);
 
+  // A SINTAXE DA ESTRUTURA ABAIXO ESTÁ DIFERENTE DO VÍDEO
   const form = useForm<z.infer<typeof AppointmentFormValidation>>({
     resolver: zodResolver(AppointmentFormValidation),
     defaultValues: {
-      primaryPhysician: appointment ? appointment?.primaryPhysician : "",
+      primaryPhysician: appointment ? appointment.primaryPhysician : "",
       schedule: appointment
-        ? new Date(appointment?.schedule!)
+        ? new Date(appointment?.schedule)
         : new Date(Date.now()),
       reason: appointment ? appointment.reason : "",
-      note: appointment?.note || "",
-      cancellationReason: appointment?.cancellationReason || "",
+      note: appointment?.note || "", // appointment ? appointment.note : "",
+      cancellationReason: appointment?.cancellationReason || "", // appointment ? appointment.cancellationReason : "", // ou
+      //  appointment?.cancellationReason ?? "",
     },
   });
 
   const onSubmit = async (
     values: z.infer<typeof AppointmentFormValidation>
   ) => {
+    console.log("IM SUBMITNG", { type });
+
     setIsLoading(true);
 
     let status;
@@ -68,8 +72,10 @@ export const AppointmentForm = ({
         break;
       default:
         status = "pending";
+        break;
     }
 
+    // Esta sintaxe abaixo está diferente no vídeo https://www.youtube.com/watch?v=lEflo_sc82g&t=7593s&ab_channel=JavaScriptMastery
     try {
       if (type === "create" && patientId) {
         const appointment = {
@@ -80,6 +86,7 @@ export const AppointmentForm = ({
           reason: values.reason!,
           status: status as Status,
           note: values.note,
+          title: "Default Title", // Adicione esta linha
         };
 
         const newAppointment = await createAppointment(appointment);
@@ -91,19 +98,27 @@ export const AppointmentForm = ({
           );
         }
       } else {
+        console.log("Formulário enviado com valores:", values);
+
         const appointmentToUpdate = {
           userId,
           appointmentId: appointment?.$id!,
           appointment: {
-            primaryPhysician: values.primaryPhysician,
-            schedule: new Date(values.schedule),
+            primaryPhysician: values?.primaryPhysician,
+            schedule: new Date(values?.schedule),
             status: status as Status,
-            cancellationReason: values.cancellationReason,
+            cancellationReason: values?.cancellationReason,
+            title: "Default Title", // Adicione esta linha
           },
-          type,
+          // type,
+          type: type as "schedule" | "cancel", // Remova "create"
         };
 
+        console.log("Atualizando compromisso:", appointmentToUpdate);
+
         const updatedAppointment = await updateAppointment(appointmentToUpdate);
+
+        console.log("Resposta da atualização:", updatedAppointment);
 
         if (updatedAppointment) {
           setOpen && setOpen(false);
@@ -121,11 +136,16 @@ export const AppointmentForm = ({
     case "cancel":
       buttonLabel = "Cancel Appointment";
       break;
+    case "create":
+      buttonLabel = "Create Appointment";
+      break;
     case "schedule":
       buttonLabel = "Schedule Appointment";
       break;
     default:
-      buttonLabel = "Submit Apppointment";
+      break;
+    /* default:
+      buttonLabel = "Submit Apppointment"; */
   }
 
   return (
@@ -192,7 +212,7 @@ export const AppointmentForm = ({
                 name="note"
                 label="Comments/notes"
                 placeholder="Prefer afternoon appointments, if possible"
-                disabled={type === "schedule"}
+                disabled={false} // {type === "schedule"}
               />
             </div>
           </>
